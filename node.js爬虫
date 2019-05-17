@@ -1,0 +1,32 @@
+var https=require("https");//引入模块
+var cheerio=require("cheerio");//npm i cheerio模块下载
+var fs=require("fs");
+var url="https://news.sina.com.cn/china/";
+
+		 
+function get_network_data(url,callback){//相当于模仿手动打开网址
+	var html='';//监听网络数据事件包,相当于存储HTML页面
+	https.get(url,function(res){
+		res.on("data",function(chunk){
+			html+=chunk;//数据流拼接，将获取的一段一段数据
+		});
+		res.on("end",function(){//监听到响应事件结束
+			var $=cheerio.load(html);//数据解析
+			callback($)
+		});
+	}).on("error",function(err){
+		console.log(err.message);//处理请求异常,那种网络问题，404问题等
+	});
+}
+get_network_data(url,function($){
+				 $("div.right-content a").each(function(){//"加入标签“,遍历A标签的每一个网址
+	var news_uri=$(this).attr("href");
+	get_network_data(news_uri,function($){
+		var article=$("#article").text();//获取文本内容,""加入标签
+		var time_string=new Date().valueOf();//获取网页上的时间戳字符串
+		fs.writeFileSync("./news/"+time_string+".txt",article);//时间戳字符串防止获取的内容存入文本时名字重复,拼接
+	});
+	
+	
+});
+				 });
